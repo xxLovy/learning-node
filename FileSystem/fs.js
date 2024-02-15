@@ -8,4 +8,7 @@ fs.writeFile('./FileSystem/Motto.txt', motto, err => {
         console.log('failed')
         return
     }
+    console.log("succeeded")
 })
+
+console.log('this message goes first')
