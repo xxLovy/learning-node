@@ -2,7 +2,8 @@ const http = require('http')
 const fs = require('fs')
 
 const server = http.createServer((req, rep) => {
-    fs.readFile('./p2.html', (err, data) => {
+
+    fs.readFile(__dirname + '/p2.html', (err, data) => {
         if (err) {
             console.log('读取失败')
         }
@@ -14,9 +15,6 @@ const server = http.createServer((req, rep) => {
         }
         return
     })
-
-
-
 })
 
 server.listen(9000, () => {
