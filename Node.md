@@ -1062,3 +1062,453 @@ server.listen(9000, () => {
 })
 ```
 
+## 5. 模块化
+
+导出模块内的数据
+
+```js
+module.exports = value
+exports.name = value
+```
+
+在另一个模块中导入
+
+使用自己开发的模块时 使用相对路径
+
+```js
+const test = require('./test')
+```
+
+### 注意事项
+
+1. 对于自己创建的模块，建议在导入时使用相对路径，并且不能省略 `./` 和 `../`。
+
+2. 对于 JavaScript 和 JSON 文件，导入时可以省略文件后缀。而对于 C/C++ 编写的 Node 扩展文件，一般情况下也可以省略文件后缀，但通常用不到。
+
+3. 如果导入的路径是一个文件夹，则会优先检测该文件夹下的 `package.json` 文件中的 `main` 属性对应的文件。如果该文件存在，则导入成功；如果文件不存在，则会报错。如果 `main` 属性不存在或者 `package.json` 文件不存在，则会尝试导入文件夹下的 `index.js` 和 `index.json` 文件，如果仍然没有找到，则会报错。
+
+4. 导入 Node.js 内置模块时，直接使用 `require` 加上模块的名字即可，无需加上 `./` 和 `../`。
+
+## 6. Express
+
+### 6.1 路由
+
+路由确定了应用程序如何响应客户端对特定端点的请求
+
+```js
+app.get('/home', (request, response) => {
+    response.end('hello express')
+})
+
+app.get('/', (req, res) => {
+    res.end('home')
+})
+
+app.post('/login', (req, res) => {
+    res.end('loginloginloginlogin')
+})
+
+app.all('/test', (req, res) => {
+    res.end('test test test')
+})
+
+app.all('*', (req, res) => {
+    res.end('<h1>404 Not Found</h1>')
+})
+```
+
+### 6.2 获取请求参数
+
+```js
+const express = require('express')
+
+const app = express()
+
+app.get('/request', (req, res) => {
+    // 原生操作
+    console.log(req.method)
+    console.log(req.url)
+    console.log(req.httpVersion)
+    console.log(req.headers)
+
+    // express
+    console.log(req.path)
+    console.log(req.query)
+    // 获取IP
+    console.log(req.ip)
+    // 获取请求头
+    console.log(req.get('host'))
+
+
+    res.end('Hi this is OMEN')
+})
+
+
+app.listen(3000, () => {
+    console.log('http://127.0.0.1:3000')
+})
+```
+
+### 6.3 获取路由参数
+
+可以使用通配符设置`'/:id.html'`
+
+```js
+app.get('/:id.html', (req, res) => {
+    // 获取URL路由参数
+    console.log(req.params.id)
+    req.end(req.params.id)
+
+})
+```
+
+通过`req.params.id`来获取路由参数
+
+### 练习：根据路由参数响应歌手的信息
+
+路径结构如下
+
+```
+/singer/1.html
+```
+
+显示歌手的`姓名`和`图片`
+
+```json
+{
+  "singers": [
+    {
+      "singer_name": "周杰伦",
+      "singer_pic": "http://y.gtimg.cn/music/photo_new/T001R150x150M0000025NhlN2yWrP4.webp",
+      "other_name": "Jay Chou",
+      "singer_id": 4558,
+      "id": 1
+    },
+    {
+      "singer_name": "林俊杰",
+      "singer_pic": "http://y.gtimg.cn/music/photo_new/T001R150x150M000001BLpXF2DyJe2.webp",
+      "other_name": "JJ Lin",
+      "singer_id": 4286,
+      "id": 2
+    },
+    {
+      "singer_name": "G.E.M. 邓紫棋",
+      "singer_pic": "http://y.gtimg.cn/music/photo_new/T001R150x150M000001fNHEf1SFEFN.webp",
+      "other_name": "Gloria Tang",
+      "singer_id": 13948,
+      "id": 3
+    },
+    {
+      "singer_name": "薛之谦",
+      "singer_pic": "http://y.gtimg.cn/music/photo_new/T001R150x150M000002J4UUk29y8BY.webp",
+      "other_name": "",
+      "singer_id": 5062,
+      "id": 4
+    }
+  ]
+}
+```
+
+#### 初次实现
+
+```js
+const express = require('express')
+const app = express()
+const fs = require('fs')
+
+app.get('/singer/:id.html', (req, res) => {
+    const json = fs.readFileSync('./Singers.json')
+    const data = JSON.parse(json)
+
+    const singer = data['singers'][req.params.id - 1]
+    const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+    </head>
+    <body>
+        <h1>${singer["singer_name"]}</h1>
+        <img src="${singer["singer_pic"]}" alt="">
+        <h2>${singer["other_name"]}</h2>
+        <h2>把你的爱给${singer["singer_id"]}号</h2>
+    </body>
+    </html>
+    `
+    res.end(html)
+})
+
+app.listen(3000, () => {
+    console.log('http://127.0.0.1:3000')
+})
+```
+
+#### limitations
+
++ 能不能单独创建一个html，将数据返回给html而不是在js file里这样操作
++ JSON文件第一次尝试读取，看上去有点儿怪`JSON.parse(json)`
+
+#### 改进
+
+使用`require`读取JSON文件 而不是`fs`和`JSON.parse(json)`
+
+```js
+const { singers } = require('./Singers')
+```
+
+使用`.find`方法
+
+```js
+    let { id } = req.params
+    let result = singers.find(item => {
+        if (item.id === Number(id)) {
+            return true
+        }
+    })
+
+    // 判断是否合法
+    if (!result) {
+        res.statusCode = 404
+        res.end('<h1>404 Not Found</h1>')
+        return
+    } 
+```
+
+### 6.4 响应参数
+
+```js
+//获取响应的路由规则
+app.get("/response", (req, res) => {
+    //1. express 中设置响应的方式兼容 HTTP 模块的方式
+    res.statusCode = 404;
+    res.statusMessage = 'xxx';
+    res.setHeader('abc', 'xyz');
+    res.write('响应体');
+    res.end('xxx');
+    //2. express 的响应方法
+    res.status(500); //设置响应状态码
+    res.set('xxx', 'yyy');//设置响应头
+    res.send('中文响应不乱码');//设置响应体
+    //连贯操作
+    res.status(404).set('xxx', 'yyy').send('你好朋友')
+    //3. 其他响应
+    res.redirect('https://baidu.com')//重定向
+    res.download('./package.json');//下载响应
+    res.json();//响应 JSON
+    res.sendFile(__dirname + '/home.html') //响应文件内容
+});
+```
+
+### 6.5 全局中间件
+
+如果想获取路由的IP和url则需要在路由中加入
+
+```js
+app.get("/home", (req, res) => {
+    
+    // 获取url和ip
+    let { url, ip } = req
+    // 将文件保存在access.log
+    fs.appendFileSync(path.resolve(__dirname , './access.log'), `${url} ${ip}\r\n`)
+    
+    res.send('front homepage')
+});
+```
+
+但是如果要获得每一个路由的url和ip则需要在每个路由中都加入，这样很麻烦，可以通过构建全局中间件来简化
+
+```js
+function recordMiddleware(req, res, next) {
+    // 获取url和ip
+    let { url, ip } = req
+    // 将文件保存在access.log
+    fs.appendFileSync(path.resolve(__dirname , './access.log'), `${url} ${ip}\r\n`)
+    // 调用next
+    next()
+}
+
+// 谁用中间件函数
+app.use(recordMiddleware)
+```
+
+### 6.6 路由中间件
+
+实现需求
+
+```js
+/**
+ * 针对 /admin  /setting 的请求, 要求 URL 携带 code=521 参数, 如未携带提示『暗号错误』  
+ */
+```
+
+封装一个路由中间件
+
+```js
+let checkCodeMiddleware = (req, res, next) => {
+    // 判断URL中code是否为521
+    if (req.query.code === '521') {
+        next()
+    } else {
+        res.send('暗号错误')
+    }
+}
+```
+
+在需要加入校验的路由后加上中间件
+
+```js
+app.get('/admin', checkCodeMiddleware, (req, res) => {
+    if (res)
+        res.send('end homepage')
+})
+
+app.get('/setting', checkCodeMiddleware, (req, res) => {
+    res.send('setting page')
+})
+
+app.get('*', (req, res) => {
+    res.send('<h1>404 NOT FOUND</h1>')
+})
+```
+
+当输入`http://127.0.0.1:3000/setting`时，返回`暗号错误`输入`http://127.0.0.1:3000/setting?code=521`后返回`setting page`
+
+### 6.7 静态资源中间件
+
+```js
+// 静态资源中间件设置
+app.use(express.static(__dirname + '/public'))
+```
+
+相当于之前第四章HTTP模块中的
+
+```js
+    // 获取文件后缀
+    let ext = path.extname(filePath).slice(1)
+    // 获取对应的类型
+    let type = mimes[ext]
+    if (type) {
+      rep.setHeader('content-type', type)
+    } else {
+      rep.setHeader('content-type', 'application/octet-stream')
+```
+
+加入这个中间件之后可以直接在网页访问静态资源
+
+```js
+const express = require('express')
+const app = express()
+
+// 静态资源中间件设置
+app.use(express.static(__dirname + '/public'))
+
+app.get("/home", (req, res) => {
+    res.send('front homepage')
+});
+
+app.listen(3000, () => {
+    console.log('http://127.0.0.1:3000')
+})
+```
+
+静态资源目录中的`index.html`默认被访问`http://127.0.0.1:3000/`等价于`http://127.0.0.1:3000/index.html`
+
+### 练习：在局域网内可以访问的网页
+
+```js
+const express = require('express')
+const app = express()
+
+app.use(express.static(__dirname + '/random-choice-picker'))
+
+app.listen(3000, () => {
+    console.log('http://127.0.0.1:3000')
+})
+```
+
+配置好静态资源中间件即可
+
+### 6.8 获取请求体数据
+
+使用`body-parser`模块来获取请求体的数据
+
+导入模块并实例化一个parser
+
+```js
+const bodyParser = require('body-parser')
+const parser = bodyParser.urlencoded({ extended: false })
+```
+
+将parser作为路由中间件使用
+
+```js
+app.post('/login', parser, (req, res) => {
+    // 获取用户数据
+    console.log(req.body)
+
+    res.send('获取用户数据')
+})
+```
+
+使用后会给`req`增加一个body属性
+
+```js
+const express = require('express')
+const app = express()
+const bodyParser = require('body-parser')
+
+const parser = bodyParser.urlencoded({ extended: false })
+
+app.get('/login', (req, res) => {
+    res.sendFile(__dirname + '/login.html')
+})
+
+app.post('/login', parser, (req, res) => {
+    // 获取用户数据
+    console.log(req.body)
+
+    res.send('获取用户数据')
+})
+
+app.listen(3000, () => {
+    console.log('http://127.0.0.1:3000')
+})
+```
+
+### 6.9 路由模块化
+
+```js
+const express = require('express')
+const app = express()
+const adminRouter = require('./routers/adminHomepage')
+const homeRouter = require('./routers/frontHomepage')
+
+app.use(adminRouter)
+app.use(homeRouter)
+
+app.listen(3000, () => {
+    console.log('http://127.0.0.1:3000')
+})
+```
+
+adminHomepage
+
+```js
+const express = require('express')
+const router = express.Router()
+
+router.get('/admin', (req, res) => {
+    res.send('admin page')
+})
+
+router.get('/setting', (req, res) => {
+    res.send('setting')
+})
+
+module.exports = router
+```
+
+## 案例
+
